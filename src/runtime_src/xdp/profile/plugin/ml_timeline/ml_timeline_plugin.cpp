@@ -19,6 +19,7 @@
 #include<regex>
 #include<string>
 
+#include "core/common/api/bo_int.h"
 #include "core/common/device.h"
 #include "core/common/message.h"
 #include "core/common/api/hw_context_int.h"
@@ -134,19 +135,28 @@ namespace xdp {
           << ", hw_gen: " << std::to_string(meta_config.hw_gen);
       xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", msg.str());
     }
-    /* 
-    mDebugger->meta_config = meta_config;
-    msg << "-x- " << __func__ << "(): " << __LINE__
-        << ", hw_gen: " << std::to_string(mDebugger->meta_config.hw_gen);
-    xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", msg.str());
-    */
 
-    {
+    uint32_t* output = nullptr;
+#if 1
+    xrt::bo resultBO;
+    try {
+      resultBO = xrt_core::bo_int::create_debug_bo(hwContext, 0x20000);
+      output = resultBO.map<uint32_t*>();
+      memset(output, 0, 0x20000);
+    } catch (std::exception& e) {
       std::stringstream msg;
-      msg << "-x- " << __func__ << "(): " << __LINE__
-        << ", hw_gen: " << std::to_string(meta_config.hw_gen);
-      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", msg.str());
+      msg << "Unable to create 128KB buffer for AIE Profile results. Cannot get AIE Profile info. " << e.what() << std::endl;
+      xrt_core::message::send(xrt_core::message::severity_level::warning, "XRT", msg.str());
+      return;
     }
+#else
+    if (DeviceDataEntry.implementation->mResultBOHolder == nullptr) {
+      xrt_core::message::send(xrt_core::message::severity_level::warning, "XRT", "mResultBOHolder is null.");
+      return;
+    }
+    output = DeviceDataEntry.implementation->mResultBOHolder->map();
+#endif
+
     XAie_Config cfg {
       meta_config.hw_gen,
       meta_config.base_address,
@@ -220,6 +230,24 @@ namespace xdp {
     if (!transactionHandler->submitTransaction(txn_ptr)) {
       xrt_core::message::send(xrt_core::message::severity_level::warning, "XRT", "submitTransaction(txn_ptr) Failed.");
       return;
+    }
+
+#if 1
+    resultBO.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+#else
+    DeviceDataEntry.implementation->mResultBOHolder->syncFromDevice();
+#endif
+    {
+      std::stringstream msg;
+      msg << "-x- " << __func__ << "(): " << __LINE__ << std::endl
+          << std::setw(8) << std::setfill('0') << std::hex
+          << "     output[0]: " << output[0] << std::endl
+          << "     output[1]: " << output[1] << std::endl
+          << "     output[2]: " << output[2] << std::endl
+          << "     output[3]: " << output[3] << std::endl
+          << "     output[4]: " << output[4] << std::endl
+          << "     output[5]: " << output[5] << std::endl;
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", msg.str());
     }
 
     DeviceDataEntry.valid = true;

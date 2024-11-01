@@ -31,6 +31,8 @@
 #include "xdp/profile/plugin/ml_timeline/clientDev/ml_timeline.h"
 #endif
 
+#include "xdp/profile/device/common/client_transaction.h"
+
 namespace xdp {
 
   bool MLTimelinePlugin::live = false;
@@ -73,6 +75,8 @@ namespace xdp {
     db->registerInfo(info::ml_timeline);
 
     mBufSz = ParseMLTimelineBufferSizeConfig();
+    mDebugger = std::shared_ptr<MLTimelineDebug>();
+    //mDebugger->stacktrace();
   }
 
   MLTimelinePlugin::~MLTimelinePlugin()
@@ -105,14 +109,122 @@ namespace xdp {
 
     xrt::hw_context hwContext = xrt_core::hw_context_int::create_hw_context_from_implementation(mHwCtxImpl);
     std::shared_ptr<xrt_core::device> coreDevice = xrt_core::hw_context_int::get_core_device(hwContext);
+    if (coreDevice == nullptr) {
+      xrt_core::message::send(xrt_core::message::severity_level::error,
+          "XRT", "Failed to get device when try to parsing AIE Profile Metadata.");
+      return;
+    }
 
     // Only one device for Client Device flow
     uint64_t deviceId = db->addDevice("win_device");
     (db->getStaticInfo()).updateDeviceClient(deviceId, coreDevice, false);
     (db->getStaticInfo()).setDeviceName(deviceId, "win_device");
 
+    auto data = coreDevice->get_axlf_section(AIE_METADATA);
+    metadataReader = aie::readAIEMetadata(data.first, data.second, aie_meta);
+    if (!metadataReader) {
+      xrt_core::message::send(xrt_core::message::severity_level::error,
+          "XRT", "Error parsing AIE Profiling Metadata.");
+      return;
+    }
+    xdp::aie::driver_config meta_config = metadataReader->getDriverConfig();
+    { 
+      std::stringstream msg;
+      msg << "-x- " << __func__ << "(): " << __LINE__
+          << ", hw_gen: " << std::to_string(meta_config.hw_gen);
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", msg.str());
+    }
+    /* 
+    mDebugger->meta_config = meta_config;
+    msg << "-x- " << __func__ << "(): " << __LINE__
+        << ", hw_gen: " << std::to_string(mDebugger->meta_config.hw_gen);
+    xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", msg.str());
+    */
+
+    {
+      std::stringstream msg;
+      msg << "-x- " << __func__ << "(): " << __LINE__
+        << ", hw_gen: " << std::to_string(meta_config.hw_gen);
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", msg.str());
+    }
+    XAie_Config cfg {
+      meta_config.hw_gen,
+      meta_config.base_address,
+      meta_config.column_shift,
+      meta_config.row_shift,
+      meta_config.num_rows,
+      meta_config.num_columns,
+      meta_config.shim_row,
+      meta_config.mem_row_start,
+      meta_config.mem_num_rows,
+      meta_config.aie_tile_row_start,
+      meta_config.aie_tile_num_rows,
+      {0} // PartProp
+    };
+    XAie_DevInst aieDevInst = {0};
+    auto RC = XAie_CfgInitialize(&aieDevInst, &cfg);
+    if (RC != XAIE_OK) {
+      xrt_core::message::send(xrt_core::message::severity_level::warning, "XRT", "AIE Driver Initialization Failed.");
+      return;
+    }
+
+    //Start recording the transaction
+    XAie_StartTransaction(&aieDevInst, XAIE_TRANSACTION_DISABLE_AUTO_FLUSH);
+
+    const std::map<module_type, std::vector<uint64_t>> regValues {
+      {module_type::core, {0x31520,0x31524,0x31528,0x3152C}},
+      {module_type::dma, {0x11020,0x11024}},
+      {module_type::shim, {0x31020, 0x31024}},
+      {module_type::mem_tile, {0x91020,0x91024,0x91028,0x9102C}},
+    };
+
+
+    read_register_op_t* op;
+    std::size_t op_size;
+
+    int counterId = 2;
+
+    int col = 0;
+    int row = 2;
+    std::vector<register_data_t> op_profile_data;
+
+    std::vector<uint64_t> Regs = regValues.at(module_type::core);
+    // 25 is column offset and 20 is row offset for IPU
+    op_profile_data.emplace_back(register_data_t{Regs[0] + (col << 25) + (row << 20)});
+
+    op_size = sizeof(read_register_op_t) + sizeof(register_data_t) * (counterId - 1);
+    op = (read_register_op_t*)malloc(op_size);
+    op->count = counterId;
+    for (int i = 0; i < op_profile_data.size(); i++) {
+      op->data[i] = op_profile_data[i];
+    }
+
+    {
+      std::stringstream msg;
+      msg << "-x- " << __func__ << "(): " << __LINE__
+        << ", op_size: " << std::to_string(op_size);
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", msg.str());
+    }
+    //XAie_AddCustomTxnOp(&aieDevInst, XAIE_IO_CUSTOM_OP_READ_REGS, (void*)op, op_size);
+    XAie_AddCustomTxnOp(&aieDevInst, XAIE_IO_CUSTOM_OP_RECORD_TIMER, (void*)op, 4);
+    uint8_t *txn_ptr = XAie_ExportSerializedTransaction(&aieDevInst, 1, 0);
+
+    std::unique_ptr<aie::ClientTransaction> transactionHandler;
+    transactionHandler = std::make_unique<aie::ClientTransaction>(hwContext, "AIE Profile Setup");
+
+    if (!transactionHandler->initializeKernel("XDP_KERNEL")) {
+      xrt_core::message::send(xrt_core::message::severity_level::warning, "XRT", "initializeKernel(\"XDP_KERNEL\") Failed.");
+      return;
+    }
+
+    if (!transactionHandler->submitTransaction(txn_ptr)) {
+      xrt_core::message::send(xrt_core::message::severity_level::warning, "XRT", "submitTransaction(txn_ptr) Failed.");
+      return;
+    }
+
     DeviceDataEntry.valid = true;
     DeviceDataEntry.implementation = std::make_unique<MLTimelineClientDevImpl>(db);
+    DeviceDataEntry.implementation->mDebugger = mDebugger;
     DeviceDataEntry.implementation->setHwContext(hwContext);
     DeviceDataEntry.implementation->setBufSize(mBufSz);
     DeviceDataEntry.implementation->updateDevice(mHwCtxImpl);

@@ -16,6 +16,9 @@
 
 #define XDP_PLUGIN_SOURCE
 
+// -x- debug
+#include <iostream>
+
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
@@ -32,6 +35,7 @@
 
 #include "xdp/profile/plugin/ml_timeline/clientDev/ml_timeline.h"
 #include "xdp/profile/plugin/vp_base/utility.h"
+#include "xdp/profile/plugin/ml_timeline/ml_timeline_debug.h"
 
 namespace xdp {
 
@@ -63,6 +67,10 @@ namespace xdp {
   {
     xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", 
               "Created ML Timeline Plugin for Client Device.");
+    //MLTimelineDebug *mDebug = new MLTimelineDebug();
+    //mDebug->stacktrace();
+    mDebugger->stacktrace();
+
   }
 
   void MLTimelineClientDevImpl::updateDevice(void* /*hwCtxImpl*/)
@@ -97,6 +105,11 @@ namespace xdp {
     xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", 
               "Using Allocated buffer In MLTimelineClientDevImpl::finishflushDevice");
               
+    // -x- debug
+    std::cout << "-x- hello --" << std::endl;
+    mDebugger->stacktrace();
+    mDebugger->timestamp_debug();
+
     mResultBOHolder->syncFromDevice();    
     uint32_t* ptr = mResultBOHolder->map();
       

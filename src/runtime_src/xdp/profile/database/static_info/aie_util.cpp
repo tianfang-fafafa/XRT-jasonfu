@@ -38,6 +38,8 @@
 #include <memory>
 #include <optional>
 #include <set>
+// -x-
+#include <iostream>
 
 // ***************************************************************
 // Anonymous namespace for helper functions local to this file
@@ -85,8 +87,11 @@ namespace xdp::aie {
     // aie_control_config.json format
     try {
       auto c = aie_project.get_child_optional("aie_metadata.aiecompiler_options");
-      if (c)
+      if (c) {
+        xrt_core::message::send(severity_level::debug, "XRT", "-x- determineFileType() -0- AIEControlConfigFiletype");
+        std::cout << "-x- " << __func__ << "(): " << __LINE__ << " return AIEControlConfigFiletype" << std::endl;
         return std::make_unique<xdp::aie::AIEControlConfigFiletype>(aie_project);
+      }
     }
     catch(...) {
       // Most likely not an aie_control_config
@@ -97,11 +102,17 @@ namespace xdp::aie {
       if (c) {
         auto schema = c.get().get_value<std::string>();
         // compiler_report.json format
-        if (schema == "MEGraphSchema-0.4")
+        if (schema == "MEGraphSchema-0.4") {
+          xrt_core::message::send(severity_level::debug, "XRT", "-x- determineFileType() -1- AIEControlConfigFiletype");
+          std::cout << "-x- " << __func__ << "(): " << __LINE__ << " return AIEControlConfigFiletype" << std::endl;
           return std::make_unique<xdp::aie::AIEControlConfigFiletype>(aie_project);
+        }
         // Known handwritten format
-        if (schema == "handwritten")
+        if (schema == "handwritten") {
+          xrt_core::message::send(severity_level::debug, "XRT", "-x- determineFileType() -2- AIEControlConfigFiletype");
+          std::cout << "-x- " << __func__ << "(): " << __LINE__ << " return AIEControlConfigFiletype" << std::endl;
           return std::make_unique<xdp::aie::AIEControlConfigFiletype>(aie_project);
+        }
       }
     }
     catch (...) {
@@ -145,6 +156,14 @@ namespace xdp::aie {
     return *clockFreqMHz;
   }
 
+  void traverse_ptree(const boost::property_tree::ptree& pt, int level = 0) {
+    for (const auto& node : pt) {
+        std::cout << "-x- " << "level: " << std::to_string(level)
+                  << std::string(level + 1, ' ') << node.first << ": " << node.second.get_value<std::string>() << std::endl;
+        traverse_ptree(node.second, level + 1);
+    }
+  }
+
   /****************************************************************************
    * Get metadata required to configure driver
    ***************************************************************************/
@@ -154,6 +173,15 @@ namespace xdp::aie {
   {
     xdp::aie::driver_config config;
     auto meta_config = aie_meta.get_child(root);
+
+    // -x- 
+    //traverse_ptree(aie_meta);
+    std::stringstream msg;
+    msg << "-x- " << __func__ << "(): " << __LINE__
+        << ", root: " << root
+        << ", meta_config.get_child(\"hw_gen\"): " << meta_config.get_child("hw_gen").get_value<std::string>();
+    xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", msg.str());
+    traverse_ptree(meta_config);
 
     config.hw_gen =
       meta_config.get_child("hw_gen").get_value<uint8_t>();

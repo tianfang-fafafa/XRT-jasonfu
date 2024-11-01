@@ -18,7 +18,9 @@
 #define XDP_ML_TIMELINE_PLUGIN_H
 
 #include "xdp/profile/plugin/ml_timeline/ml_timeline_impl.h"
+#include "xdp/profile/plugin/aie_profile/aie_profile_metadata.h"
 #include "xdp/profile/plugin/vp_base/vp_base_plugin.h"
+#include "xdp/profile/plugin/ml_timeline/ml_timeline_debug.h"
 
 
 namespace xdp {
@@ -48,6 +50,11 @@ namespace xdp {
 
     void* mHwCtxImpl = nullptr;
     uint32_t mBufSz  = 0x20000;
+
+    std::shared_ptr<MLTimelineDebug> mDebugger;
+
+    boost::property_tree::ptree aie_meta;
+    std::shared_ptr<aie::BaseFiletypeImpl> metadataReader;
 
   };
 

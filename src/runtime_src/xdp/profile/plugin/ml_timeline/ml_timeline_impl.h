@@ -18,6 +18,7 @@
 #define XDP_PLUGIN_ML_TIMELINE_IMPL_H
 
 #include "core/include/xrt/xrt_hw_context.h"
+#include "xdp/profile/plugin/ml_timeline/ml_timeline_debug.h"
 
 namespace xdp {
 
@@ -51,6 +52,8 @@ namespace xdp {
       {
         mBufSz = sz;
       }
+
+      std::shared_ptr<MLTimelineDebug> mDebugger;
   };
 
 }

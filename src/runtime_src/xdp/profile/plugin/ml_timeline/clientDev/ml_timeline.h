@@ -18,6 +18,8 @@
 #define XDP_PLUGIN_ML_TIMELINE_CLIENTDEV_IMPL_H
 
 #include "xdp/config.h"
+#include "xdp/profile/database/static_info/aie_util.h"
+#include "xdp/profile/database/static_info/filetypes/base_filetype_impl.h"
 #include "xdp/profile/plugin/ml_timeline/ml_timeline_impl.h"
 
 namespace xdp {
@@ -26,6 +28,10 @@ namespace xdp {
   class MLTimelineClientDevImpl : public MLTimelineImpl
   {
     ResultBOContainer* mResultBOHolder;
+    boost::property_tree::ptree aie_meta;
+    std::shared_ptr<aie::BaseFiletypeImpl> metadataReader;
+    void sendTimestampReadingCmd();
+    std::vector<uint64_t> getTimestampReadingResult(uint32_t ts_num);
     public :
       MLTimelineClientDevImpl(VPDatabase* dB);
 
@@ -33,6 +39,11 @@ namespace xdp {
 
       virtual void updateDevice(void* hwCtxImpl);
       virtual void finishflushDevice(void* hwCtxImpl);
+      uint64_t readTimestamp() {
+        sendTimestampReadingCmd();
+        std::vector<uint64_t> ts = getTimestampReadingResult(1);
+        return ts[0];
+      };
   };
 
 }

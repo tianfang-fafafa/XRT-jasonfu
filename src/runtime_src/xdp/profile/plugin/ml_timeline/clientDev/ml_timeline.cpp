@@ -198,7 +198,21 @@ namespace xdp {
       mResultBOHolder->syncFromDevice();
       memset(mResultBOHolder->map(), 0, mBufSz);
       std::string msec_before = xdp::getMsecSinceEpoch();
-      uint64_t ts = readTimestamp();
+      sendTimestampReadingCmd();
+
+      mResultBOHolder->syncFromDevice();
+      std::this_thread::sleep_for(std::chrono::microseconds(1000000));
+      uint32_t* output = mResultBOHolder->map();
+      std::cout << "-x-2-output: " << output << std::endl;
+      std::cout << "     output[0]: " << output[0] << std::endl;
+      std::cout << "     output[1]: " << output[1] << std::endl;
+      std::cout << "     output[2]: " << output[2] << std::endl;
+      std::cout << "     output[3]: " << output[3] << std::endl;
+      std::cout << "     output[4]: " << output[4] << std::endl;
+      std::cout << "     output[5]: " << output[5] << std::endl;
+      uint64_t ts64 = *(output + 1);
+      ts64 = (ts64 << 32) | *(output + 2);
+      uint64_t ts = ts64;
       std::string msec_after = xdp::getMsecSinceEpoch();
       std::stringstream ssmsg;
       ssmsg << "MsecSinceEpoch: " << msec_before
@@ -206,6 +220,7 @@ namespace xdp {
           << ", MsecSinceEpoch: " << msec_after << std::endl;
       xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
     }
+    std::this_thread::sleep_for(std::chrono::microseconds(1000000));
     /* Delete the result BO so that AIE Profile/Debug Plugins, if enabled,
      * can use their own Debug BO to capture their data.
      */
@@ -277,6 +292,7 @@ namespace xdp {
     mResultBOHolder->syncFromDevice();
     std::vector<uint64_t> result;
     uint32_t* output = mResultBOHolder->map();
+    std::cout << "-x-1-output: " << output << std::endl;
     for (uint32_t i = 0; i < ts_num; i++, output += 3) {
       uint64_t ts64 = *(output + 1);
       ts64 = (ts64 << 32) | *(output + 2);

@@ -76,6 +76,28 @@ namespace xdp {
   {
     xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", 
               "In MLTimelineClientDevImpl::updateDevice");
+
+    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
+      /*
+       * To make sure the debug buffer host_offset is zero, create_debug_bo()
+       * must be called before trying to read timestamp. And create_debug_bo()
+       * should not call before previous has been freed, otherwise the creation
+       * would be ignored and the host_offset would not be zero.
+       */
+      mResultBOHolder = new ResultBOContainer(mHwContext, mBufSz);
+      memset(mResultBOHolder->map(), 0, mBufSz);
+      std::string msec_before = xdp::getMsecSinceEpoch();
+      uint64_t ts = readTimestamp();
+      std::string msec_after = xdp::getMsecSinceEpoch();
+      std::stringstream ssmsg;
+      ssmsg << "MsecSinceEpoch: " << msec_before
+          << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
+          << ", MsecSinceEpoch: " << msec_after << std::endl;
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
+      delete mResultBOHolder;
+      mResultBOHolder = nullptr;
+    }
+
     try {
 
       /* Use a container for Debug BO for results to control its lifetime.
@@ -97,18 +119,6 @@ namespace xdp {
     }
     xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", 
               "Allocated buffer In MLTimelineClientDevImpl::updateDevice");
-    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
-      mResultBOHolder->syncFromDevice();
-      memset(mResultBOHolder->map(), 0, mBufSz);
-      std::string msec_before = xdp::getMsecSinceEpoch();
-      uint64_t ts = readTimestamp();
-      std::string msec_after = xdp::getMsecSinceEpoch();
-      std::stringstream ssmsg;
-      ssmsg << "MsecSinceEpoch: " << msec_before
-          << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
-          << ", MsecSinceEpoch: " << msec_after << std::endl;
-      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
-    }
   }
 
   void MLTimelineClientDevImpl::finishflushDevice(void* /*hwCtxImpl*/)
@@ -194,38 +204,36 @@ namespace xdp {
     xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", 
               "Finished writing record_timer_ts.json in MLTimelineClientDevImpl::finishflushDevice");
 
-    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
-      mResultBOHolder->syncFromDevice();
-      memset(mResultBOHolder->map(), 0, mBufSz);
-      std::string msec_before = xdp::getMsecSinceEpoch();
-      sendTimestampReadingCmd();
+    /* Delete the result BO so that AIE Profile/Debug Plugins, if enabled,
+     * can use their own Debug BO to capture their data.
+     */
+    delete mResultBOHolder;
+    mResultBOHolder = nullptr;
 
-      mResultBOHolder->syncFromDevice();
-      std::this_thread::sleep_for(std::chrono::microseconds(1000000));
-      uint32_t* output = mResultBOHolder->map();
-      std::cout << "-x-2-output: " << output << std::endl;
-      std::cout << "     output[0]: " << output[0] << std::endl;
-      std::cout << "     output[1]: " << output[1] << std::endl;
-      std::cout << "     output[2]: " << output[2] << std::endl;
-      std::cout << "     output[3]: " << output[3] << std::endl;
-      std::cout << "     output[4]: " << output[4] << std::endl;
-      std::cout << "     output[5]: " << output[5] << std::endl;
-      uint64_t ts64 = *(output + 1);
-      ts64 = (ts64 << 32) | *(output + 2);
-      uint64_t ts = ts64;
+    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
+      /*
+       * To make sure the debug buffer host_offset is zero, create_debug_bo()
+       * must be called before trying to read timestamp. And create_debug_bo()
+       * should not call before previous has been freed, otherwise the creation
+       * would be ignored and the host_offset would not be zero.
+       */
+      mResultBOHolder = new ResultBOContainer(mHwContext, mBufSz);
+      memset(mResultBOHolder->map(), 0, mBufSz);
+
+      std::string msec_before = xdp::getMsecSinceEpoch();
+      uint64_t ts = readTimestamp();
       std::string msec_after = xdp::getMsecSinceEpoch();
       std::stringstream ssmsg;
       ssmsg << "MsecSinceEpoch: " << msec_before
           << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
           << ", MsecSinceEpoch: " << msec_after << std::endl;
       xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
+      delete mResultBOHolder;
+      mResultBOHolder = nullptr;
     }
+    /* The purpose of this line is to make sure the firmware utl log has poped
+     * before ipu power down */
     std::this_thread::sleep_for(std::chrono::microseconds(1000000));
-    /* Delete the result BO so that AIE Profile/Debug Plugins, if enabled,
-     * can use their own Debug BO to capture their data.
-     */
-    delete mResultBOHolder;
-    mResultBOHolder = nullptr;
   }
 
   void MLTimelineClientDevImpl::sendTimestampReadingCmd()
@@ -292,7 +300,6 @@ namespace xdp {
     mResultBOHolder->syncFromDevice();
     std::vector<uint64_t> result;
     uint32_t* output = mResultBOHolder->map();
-    std::cout << "-x-1-output: " << output << std::endl;
     for (uint32_t i = 0; i < ts_num; i++, output += 3) {
       uint64_t ts64 = *(output + 1);
       ts64 = (ts64 << 32) | *(output + 2);

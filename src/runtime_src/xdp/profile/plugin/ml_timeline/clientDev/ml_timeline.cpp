@@ -98,6 +98,40 @@ namespace xdp {
       mResultBOHolder = nullptr;
     }
 
+    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
+      mResultBOHolder = new ResultBOContainer(mHwContext, mBufSz);
+      memset(mResultBOHolder->map(), 0, mBufSz);
+
+      std::stringstream ssmsg;
+      std::string msec_before = xdp::getMsecSinceEpoch();
+      ssmsg << std::endl << " MsecSinceEpoch[0]: " << msec_before << std::endl;
+      sendTimestampReadingCmd();
+      msec_before = xdp::getMsecSinceEpoch();
+      ssmsg << " MsecSinceEpoch[1]: " << msec_before << std::endl;
+      sendTimestampReadingCmd();
+      msec_before = xdp::getMsecSinceEpoch();
+      ssmsg << " MsecSinceEpoch[2]: " << msec_before << std::endl;
+      sendTimestampReadingCmd();
+      msec_before = xdp::getMsecSinceEpoch();
+      ssmsg << " MsecSinceEpoch[3]: " << msec_before << std::endl;
+      sendTimestampReadingCmd();
+      msec_before = xdp::getMsecSinceEpoch();
+      ssmsg << " MsecSinceEpoch[4]: " << msec_before << std::endl << "----------" << std::endl;
+      sendTimestampReadingCmd();
+      std::vector<uint64_t> ts_v;
+      ts_v = getTimestampReadingResult(5);
+      std::string msec_after = xdp::getMsecSinceEpoch();
+
+      int index = 0;
+      for (uint64_t ts: ts_v) {
+        ssmsg << "  Timestamp[" << index++ << "]: " << std::dec << ts << "(0x" << std::hex << ts << ")" << std::endl;
+      }
+      ssmsg << ", MsecSinceEpoch: " << msec_after << std::endl;
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
+      delete mResultBOHolder;
+      mResultBOHolder = nullptr;
+    }
+
     try {
 
       /* Use a container for Debug BO for results to control its lifetime.

@@ -51,10 +51,20 @@ namespace xdp {
     return std::string("0000-00-00 0000");
   }
 
-  std::string getMsecSinceEpoch() 
+  std::string getMsecSinceEpoch()//modify for test
   {
-    auto timeSinceEpoch = (std::chrono::system_clock::now()).time_since_epoch();
-    auto value = std::chrono::duration_cast<std::chrono::milliseconds>(timeSinceEpoch);
+    //auto timeSinceEpoch = (std::chrono::system_clock::now()).time_since_epoch();
+    auto timeSinceEpoch = (std::chrono::steady_clock::now()).time_since_epoch();
+    //auto value = std::chrono::duration_cast<std::chrono::milliseconds>(timeSinceEpoch);
+    auto value = std::chrono::duration_cast<std::chrono::microseconds>(timeSinceEpoch);
+    return std::to_string(value.count());
+  }
+
+  std::string getUsecSinceEpoch()
+  {
+    //auto timeSinceEpoch = (std::chrono::system_clock::now()).time_since_epoch();
+    auto timeSinceEpoch = (std::chrono::steady_clock::now()).time_since_epoch();
+    auto value = std::chrono::duration_cast<std::chrono::microseconds>(timeSinceEpoch);
     return std::to_string(value.count());
   }
 

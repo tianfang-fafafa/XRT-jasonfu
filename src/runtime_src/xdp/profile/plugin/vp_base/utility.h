@@ -27,6 +27,7 @@ namespace xdp {
 
   XDP_CORE_EXPORT std::string getCurrentDateTime();
   XDP_CORE_EXPORT std::string getMsecSinceEpoch();
+  XDP_CORE_EXPORT std::string getUsecSinceEpoch();
   XDP_CORE_EXPORT const char* getToolVersion();
   XDP_CORE_EXPORT std::string getXRTVersion();
   XDP_CORE_EXPORT bool isEdge();

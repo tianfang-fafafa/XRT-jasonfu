@@ -14,6 +14,7 @@
  * under the License.
  */
 
+//#define XRT_VERBOSE
 #define XDP_PLUGIN_SOURCE
 
 #include <boost/property_tree/ptree.hpp>
@@ -76,6 +77,29 @@ namespace xdp {
   {
     xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", 
               "In MLTimelineClientDevImpl::updateDevice");
+#if 0
+    //std::stringstream ssmsg;
+
+    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
+      /*
+       * To make sure the debug buffer host_offset is zero, create_debug_bo()
+       * must be called before trying to read timestamp. And create_debug_bo()
+       * should not call before previous has been freed, otherwise the creation
+       * would be ignored and the host_offset would not be zero.
+       */
+      mResultBOHolder = new ResultBOContainer(mHwContext, mBufSz);
+      memset(mResultBOHolder->map(), 0, mBufSz);
+      std::stringstream ssmsg;
+      std::string msec_before = xdp::getMsecSinceEpoch();
+      uint64_t ts = readTimestamp();
+      std::string msec_after = xdp::getMsecSinceEpoch();
+      ssmsg << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before
+          << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
+          << ", MsecSinceEpoch: " << msec_after << std::endl;
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
+      delete mResultBOHolder;
+      mResultBOHolder = nullptr;
+    }
 
     if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
       /*
@@ -90,7 +114,7 @@ namespace xdp {
       uint64_t ts = readTimestamp();
       std::string msec_after = xdp::getMsecSinceEpoch();
       std::stringstream ssmsg;
-      ssmsg << "MsecSinceEpoch: " << msec_before
+      ssmsg << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before
           << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
           << ", MsecSinceEpoch: " << msec_after << std::endl;
       xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
@@ -99,38 +123,68 @@ namespace xdp {
     }
 
     if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
+      /*
+       * To make sure the debug buffer host_offset is zero, create_debug_bo()
+       * must be called before trying to read timestamp. And create_debug_bo()
+       * should not call before previous has been freed, otherwise the creation
+       * would be ignored and the host_offset would not be zero.
+       */
       mResultBOHolder = new ResultBOContainer(mHwContext, mBufSz);
       memset(mResultBOHolder->map(), 0, mBufSz);
-
-      std::stringstream ssmsg;
       std::string msec_before = xdp::getMsecSinceEpoch();
-      ssmsg << std::endl << " MsecSinceEpoch[0]: " << msec_before << std::endl;
-      sendTimestampReadingCmd();
-      msec_before = xdp::getMsecSinceEpoch();
-      ssmsg << " MsecSinceEpoch[1]: " << msec_before << std::endl;
-      sendTimestampReadingCmd();
-      msec_before = xdp::getMsecSinceEpoch();
-      ssmsg << " MsecSinceEpoch[2]: " << msec_before << std::endl;
-      sendTimestampReadingCmd();
-      msec_before = xdp::getMsecSinceEpoch();
-      ssmsg << " MsecSinceEpoch[3]: " << msec_before << std::endl;
-      sendTimestampReadingCmd();
-      msec_before = xdp::getMsecSinceEpoch();
-      ssmsg << " MsecSinceEpoch[4]: " << msec_before << std::endl << "----------" << std::endl;
-      sendTimestampReadingCmd();
-      std::vector<uint64_t> ts_v;
-      ts_v = getTimestampReadingResult(5);
+      uint64_t ts = readTimestamp();
       std::string msec_after = xdp::getMsecSinceEpoch();
-
-      int index = 0;
-      for (uint64_t ts: ts_v) {
-        ssmsg << "  Timestamp[" << index++ << "]: " << std::dec << ts << "(0x" << std::hex << ts << ")" << std::endl;
-      }
-      ssmsg << ", MsecSinceEpoch: " << msec_after << std::endl;
+      std::stringstream ssmsg;
+      ssmsg << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before
+          << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
+          << ", MsecSinceEpoch: " << msec_after << std::endl;
       xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
       delete mResultBOHolder;
       mResultBOHolder = nullptr;
     }
+
+    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
+      /*
+       * To make sure the debug buffer host_offset is zero, create_debug_bo()
+       * must be called before trying to read timestamp. And create_debug_bo()
+       * should not call before previous has been freed, otherwise the creation
+       * would be ignored and the host_offset would not be zero.
+       */
+      mResultBOHolder = new ResultBOContainer(mHwContext, mBufSz);
+      memset(mResultBOHolder->map(), 0, mBufSz);
+      std::string msec_before = xdp::getMsecSinceEpoch();
+      uint64_t ts = readTimestamp();
+      std::string msec_after = xdp::getMsecSinceEpoch();
+      std::stringstream ssmsg;
+      ssmsg << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before
+          << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
+          << ", MsecSinceEpoch: " << msec_after << std::endl;
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
+      delete mResultBOHolder;
+      mResultBOHolder = nullptr;
+    }
+
+    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
+      /*
+       * To make sure the debug buffer host_offset is zero, create_debug_bo()
+       * must be called before trying to read timestamp. And create_debug_bo()
+       * should not call before previous has been freed, otherwise the creation
+       * would be ignored and the host_offset would not be zero.
+       */
+      mResultBOHolder = new ResultBOContainer(mHwContext, mBufSz);
+      memset(mResultBOHolder->map(), 0, mBufSz);
+      std::string msec_before = xdp::getMsecSinceEpoch();
+      uint64_t ts = readTimestamp();
+      std::string msec_after = xdp::getMsecSinceEpoch();
+      std::stringstream ssmsg;
+      ssmsg << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before
+          << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
+          << ", MsecSinceEpoch: " << msec_after << std::endl;
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
+      delete mResultBOHolder;
+      mResultBOHolder = nullptr;
+    }
+#endif
 
     try {
 
@@ -159,13 +213,37 @@ namespace xdp {
   {
     xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", 
               "Using Allocated buffer In MLTimelineClientDevImpl::finishflushDevice");
-              
+#if 0    
+    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
+      /*
+       * To make sure the debug buffer host_offset is zero, create_debug_bo()
+       * must be called before trying to read timestamp. And create_debug_bo()
+       * should not call before previous has been freed, otherwise the creation
+       * would be ignored and the host_offset would not be zero.
+       */
+      auto mtfResultBOHolder = new ResultBOContainer(mHwContext, mBufSz);
+      memset(mtfResultBOHolder->map(), 0, mBufSz);
+
+      std::string msec_before = xdp::getMsecSinceEpoch();
+      uint64_t ts = readTimestamp();
+      std::string msec_after = xdp::getMsecSinceEpoch();
+      std::stringstream ssmsg;
+      ssmsg << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before
+          << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
+          << ", MsecSinceEpoch: " << msec_after << std::endl;
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
+      delete mtfResultBOHolder;
+      mtfResultBOHolder = nullptr;
+    }
+#endif
     mResultBOHolder->syncFromDevice();    
     uint32_t* ptr = mResultBOHolder->map();
       
     boost::property_tree::ptree ptTop;
     boost::property_tree::ptree ptHeader;
     boost::property_tree::ptree ptRecordTimerTS;
+    // mtf add: record silicontime and softtime.
+    boost::property_tree::ptree ptRecordTimePair;
 
     // Header for JSON 
     ptHeader.put("date", xdp::getCurrentDateTime());
@@ -258,16 +336,51 @@ namespace xdp {
       uint64_t ts = readTimestamp();
       std::string msec_after = xdp::getMsecSinceEpoch();
       std::stringstream ssmsg;
-      ssmsg << "MsecSinceEpoch: " << msec_before
+      ssmsg << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before
           << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
           << ", MsecSinceEpoch: " << msec_after << std::endl;
       xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
       delete mResultBOHolder;
       mResultBOHolder = nullptr;
+
+#if 0// test: read twice
+      std::this_thread::sleep_for(std::chrono::seconds(10));
+      mResultBOHolder = new ResultBOContainer(mHwContext, mBufSz);
+      memset(mResultBOHolder->map(), 0, mBufSz);
+      std::string msec_before2 = xdp::getMsecSinceEpoch();
+      uint64_t ts2 = readTimestamp();
+      std::string msec_after2 = xdp::getMsecSinceEpoch();
+      std::stringstream ssmsg2;
+      ssmsg2 << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before2
+          << ", Timestamp: " << ts2 << "(0x" << std::hex << ts2 << ")"
+          << ", MsecSinceEpoch: " << msec_after2 << std::endl;
+      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg2.str());
+      delete mResultBOHolder;
+      mResultBOHolder = nullptr;
+#endif
+
+      boost::property_tree::ptree ptTimePair;//mtf
+      ptTimePair.put("silicon", ts);
+      ptTimePair.put("system", 536310642344);
+      ptRecordTimePair.push_back(std::make_pair("", ptTimePair));//mtf
+      ptTop.add_child("record_timer_pair", ptRecordTimePair);//mtf
+      // Write output file
+      std::ostringstream oss2;
+      boost::property_tree::write_json(oss2, ptTop);
+
+      // Remove quotes from value strings
+      std::regex reg2("\\\"((-?[0-9]+\\.{0,1}[0-9]*)|(null)|())\\\"(?!\\:)");
+      std::string result2 = std::regex_replace(oss2.str(), reg2, "$1");
+
+      std::ofstream fOut2;
+      fOut2.open("record_timer_ts.json");
+      fOut2 << result2;
+      fOut2.close();
     }
     /* The purpose of this line is to make sure the firmware utl log has poped
      * before ipu power down */
     std::this_thread::sleep_for(std::chrono::microseconds(1000000));
+    std::cout << "fffffffffffffffffffffffffffffffff eends " << std::endl;//mtf
   }
 
   void MLTimelineClientDevImpl::sendTimestampReadingCmd()
@@ -301,6 +414,7 @@ namespace xdp {
       meta_config.aie_tile_num_rows,
       {0} // PartProp
     };
+//    std::cout << "send cmd " << meta_config.hw_gen << ", " << meta_config.base_address << ", " << meta_config.column_shift << ", " << meta_config.row_shift << ", " << meta_config.num_rows << ", " << meta_config.num_columns << ", " << meta_config.shim_row << ", " << meta_config.mem_row_start << ", " << meta_config.mem_num_rows << ", " << meta_config.aie_tile_row_start << ", " << meta_config.aie_tile_num_rows << std::endl;
     XAie_DevInst aieDevInst = {0};
     auto RC = XAie_CfgInitialize(&aieDevInst, &cfg);
     if (RC != XAIE_OK) {
@@ -311,7 +425,7 @@ namespace xdp {
     //Start recording the transaction
     XAie_StartTransaction(&aieDevInst, XAIE_TRANSACTION_DISABLE_AUTO_FLUSH);
     uint32_t pad = 0;
-    XAie_AddCustomTxnOp(&aieDevInst, XAIE_IO_CUSTOM_OP_RECORD_TIMER, (void*)&pad, 4);
+    XAie_AddCustomTxnOp(&aieDevInst, XAIE_IO_CUSTOM_OP_RECORD_TIMER, (void*)&pad, 4);//mtf
     uint8_t *txn_ptr = XAie_ExportSerializedTransaction(&aieDevInst, 1, 0);
     std::unique_ptr<aie::ClientTransaction> transactionHandler;
     transactionHandler = std::make_unique<aie::ClientTransaction>(mHwContext, "AIE Profile Setup");
@@ -320,7 +434,7 @@ namespace xdp {
           "XRT", "initializeKernel(\"XDP_KERNEL\") Failed.");
       return;
     }
-    if (!transactionHandler->submitTransaction(txn_ptr)) {
+    if (!transactionHandler->submitTransaction(txn_ptr)) {///////////////////////////////////////
       xrt_core::message::send(xrt_core::message::severity_level::error,
           "XRT", "submitTransaction(txn_ptr) Failed.");
       return;

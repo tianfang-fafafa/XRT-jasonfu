@@ -16,6 +16,7 @@
 
 #define XDP_PLUGIN_SOURCE
 
+#include <fstream>
 #include <sstream>
 
 #include "client_transaction.h"
@@ -51,6 +52,16 @@ namespace xdp::aie {
       return true;
     }
 
+#if 1
+    std::string getUsecSinceEpoch()
+    {
+      //auto timeSinceEpoch = (std::chrono::system_clock::now()).time_since_epoch();
+      auto timeSinceEpoch = (std::chrono::steady_clock::now()).time_since_epoch();
+      auto value = std::chrono::duration_cast<std::chrono::microseconds>(timeSinceEpoch);
+      return std::to_string(value.count());
+    }
+#endif
+
     bool 
     ClientTransaction::submitTransaction(uint8_t* txn_ptr) {
       op_buf instr_buf;
@@ -69,8 +80,41 @@ namespace xdp::aie {
 
       instr_bo.write(instr_buf.ibuf_.data());
       instr_bo.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+#if 0
+      {
+        std::stringstream ssmsg;
+        ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", before kenrel creating-- " << std::endl;
+        xrt_core::message::send(severity_level::info, "XRT", ssmsg.str());
+      }
+#endif
+      auto usec_before1 = getUsecSinceEpoch();
       auto run = kernel(CONFIGURE_OPCODE, instr_bo, instr_bo.size()/sizeof(int), 0, 0, 0, 0);
+#if 1
+      {
+        std::stringstream ssmsg;
+        ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", before kenrel running-- " << std::endl;
+        xrt_core::message::send(severity_level::info, "XRT", ssmsg.str());
+      }
+#endif
+      auto usec_before2 = getUsecSinceEpoch();
       run.wait2();
+      auto usec_after = getUsecSinceEpoch();//mtf dump into recorder json file?
+      auto delta1 = std::stoull(usec_after) - std::stoull(usec_before1);
+      auto delta2 = std::stoull(usec_after) - std::stoull(usec_before2);
+      {
+        std::stringstream ssmsg;
+        ssmsg << std::endl;
+        ssmsg << "==========-x-" << __func__ << "(): " << __LINE__ << ", usec before1(before creating) sinceepoch: " << usec_before1 << std::endl;
+        ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", usec before2(before running) since epoch: " << usec_before2 << std::endl;
+        ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", usec   after since epoch: " << usec_after << std::endl;
+        ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", delta1: " << std::to_string(delta1)
+                                                        << ", delta2: " << std::to_string(delta2) << std::endl;
+        std::ofstream fOut;
+        fOut.open("tianfang_run_done_ts.json");
+        fOut << usec_after;
+        fOut.close();
+        xrt_core::message::send(severity_level::info, "XRT", ssmsg.str());
+      }
       
       xrt_core::message::send(severity_level::info, "XRT","Successfully scheduled " + transactionName + " instruction buffer.");
       return true;

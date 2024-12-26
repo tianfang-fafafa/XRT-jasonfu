@@ -88,9 +88,9 @@ namespace xdp::aie {
       auto usec_before2 = getUsecSinceEpoch();
       run.wait2();
       auto usec_after = getUsecSinceEpoch();
-      auto delta2 = std::stoull(usec_after) - std::stoull(usec_before2);
       {
 #if 0
+        auto delta2 = std::stoull(usec_after) - std::stoull(usec_before2);
         std::stringstream ssmsg;
         ssmsg << std::endl;
         ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", usec before2(before running) since epoch: " << usec_before2 << std::endl;

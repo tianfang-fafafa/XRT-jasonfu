@@ -322,7 +322,7 @@ namespace xdp {
     delete mResultBOHolder;
     mResultBOHolder = nullptr;
 
-    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
+    if (xrt_core::config::get_verbosity() >= 0) {
       /*
        * To make sure the debug buffer host_offset is zero, create_debug_bo()
        * must be called before trying to read timestamp. And create_debug_bo()
@@ -339,7 +339,7 @@ namespace xdp {
       ssmsg << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before
           << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
           << ", MsecSinceEpoch: " << msec_after << std::endl;
-      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
+      xrt_core::message::send(xrt_core::message::severity_level::info, "XRT", ssmsg.str());
       delete mResultBOHolder;
       mResultBOHolder = nullptr;
 
@@ -361,7 +361,7 @@ namespace xdp {
 
       boost::property_tree::ptree ptTimePair;//mtf
       ptTimePair.put("silicon", ts);
-      ptTimePair.put("system", 536310642344);
+      ptTimePair.put("system", 500000000000);
       ptRecordTimePair.push_back(std::make_pair("", ptTimePair));//mtf
       ptTop.add_child("record_timer_pair", ptRecordTimePair);//mtf
       // Write output file
@@ -380,7 +380,6 @@ namespace xdp {
     /* The purpose of this line is to make sure the firmware utl log has poped
      * before ipu power down */
     std::this_thread::sleep_for(std::chrono::microseconds(1000000));
-    std::cout << "fffffffffffffffffffffffffffffffff eends " << std::endl;//mtf
   }
 
   void MLTimelineClientDevImpl::sendTimestampReadingCmd()
@@ -414,7 +413,6 @@ namespace xdp {
       meta_config.aie_tile_num_rows,
       {0} // PartProp
     };
-//    std::cout << "send cmd " << meta_config.hw_gen << ", " << meta_config.base_address << ", " << meta_config.column_shift << ", " << meta_config.row_shift << ", " << meta_config.num_rows << ", " << meta_config.num_columns << ", " << meta_config.shim_row << ", " << meta_config.mem_row_start << ", " << meta_config.mem_num_rows << ", " << meta_config.aie_tile_row_start << ", " << meta_config.aie_tile_num_rows << std::endl;
     XAie_DevInst aieDevInst = {0};
     auto RC = XAie_CfgInitialize(&aieDevInst, &cfg);
     if (RC != XAIE_OK) {

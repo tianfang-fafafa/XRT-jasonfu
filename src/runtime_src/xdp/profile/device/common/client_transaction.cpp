@@ -80,40 +80,32 @@ namespace xdp::aie {
 
       instr_bo.write(instr_buf.ibuf_.data());
       instr_bo.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-#if 0
-      {
-        std::stringstream ssmsg;
-        ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", before kenrel creating-- " << std::endl;
-        xrt_core::message::send(severity_level::info, "XRT", ssmsg.str());
-      }
-#endif
-      auto usec_before1 = getUsecSinceEpoch();
       auto run = kernel(CONFIGURE_OPCODE, instr_bo, instr_bo.size()/sizeof(int), 0, 0, 0, 0);
-#if 1
-      {
-        std::stringstream ssmsg;
-        ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", before kenrel running-- " << std::endl;
-        xrt_core::message::send(severity_level::info, "XRT", ssmsg.str());
-      }
-#endif
+
+      // mtf: not use both sleep function and output string function before the
+      // kernel run.wait2().
+      //std::this_thread::sleep_for(std::chrono::seconds(2));//mtf//introduce error of timeline
       auto usec_before2 = getUsecSinceEpoch();
       run.wait2();
-      auto usec_after = getUsecSinceEpoch();//mtf dump into recorder json file?
-      auto delta1 = std::stoull(usec_after) - std::stoull(usec_before1);
+      auto usec_after = getUsecSinceEpoch();
       auto delta2 = std::stoull(usec_after) - std::stoull(usec_before2);
       {
+#if 0
         std::stringstream ssmsg;
         ssmsg << std::endl;
-        ssmsg << "==========-x-" << __func__ << "(): " << __LINE__ << ", usec before1(before creating) sinceepoch: " << usec_before1 << std::endl;
         ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", usec before2(before running) since epoch: " << usec_before2 << std::endl;
         ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", usec   after since epoch: " << usec_after << std::endl;
-        ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", delta1: " << std::to_string(delta1)
-                                                        << ", delta2: " << std::to_string(delta2) << std::endl;
+        ssmsg << "==========-x-" << __func__ << "():" << __LINE__ << ", delta2: " << std::to_string(delta2) << std::endl;
+        xrt_core::message::send(severity_level::info, "XRT", ssmsg.str());
+#endif
         std::ofstream fOut;
         fOut.open("tianfang_run_done_ts.json");
+        fOut << (std::stoull(usec_before2) + std::stoull(usec_after)) / 2;
+        fOut << "\n";
+        fOut << usec_before2;
+        fOut << "\n";
         fOut << usec_after;
         fOut.close();
-        xrt_core::message::send(severity_level::info, "XRT", ssmsg.str());
       }
       
       xrt_core::message::send(severity_level::info, "XRT","Successfully scheduled " + transactionName + " instruction buffer.");

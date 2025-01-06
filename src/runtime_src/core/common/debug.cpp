@@ -17,6 +17,9 @@
 #include "debug.h"
 #include <cstdarg>
 #include <cstdio>
+#include <fstream>
+#include <iostream>
+#include <vector>
 
 namespace xrt_core {
 
@@ -29,12 +32,31 @@ debug_lock::debug_lock()
 void
 debugf(const char* format,...)
 {
+  static std::vector<unsigned long long> mtf_clk;
   debug_lock lk;
   va_list args;
   va_start(args,format);
-  printf("%lu: ",time_ns());
+  //printf("%lu: ",time_ns());//mtf
+  auto mtf = time_ns_mtf();//micro second
+  //printf("%llu: ",time_ns_mtf());//mtf
+  printf("%llu: ",mtf);//mtf
+  mtf_clk.emplace_back(mtf);
   vprintf(format,args);
   va_end(args);
+#if 1
+  std::string mark = "aaamtf";
+  if (format == mark) {
+    printf("\n");
+    //for(auto& m : mtf_clk)
+      //std::cout << "  " << m << std::endl;
+
+    printf("  !! [-2] : %llu\n", mtf_clk[mtf_clk.size() - 2]);
+    std::ofstream fOut;
+    fOut.open("tianfang_run_done_ts.json");
+    fOut << mtf_clk[mtf_clk.size() - 2];
+    fOut.close();
+  }
+#endif
 }
 
 } // xrt_core

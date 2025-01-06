@@ -51,6 +51,15 @@ time_ns()
   return static_cast<unsigned long>(integral_duration);
 }
 
+unsigned long long
+time_ns_mtf()
+{
+  static auto zero = std::chrono::high_resolution_clock::now();
+  auto now = std::chrono::high_resolution_clock::now();
+  auto integral_duration = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+  return static_cast<unsigned long long>(integral_duration);
+}
+
 /**
  * @return formatted timestamp
  */

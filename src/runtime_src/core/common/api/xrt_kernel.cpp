@@ -3235,14 +3235,17 @@ public:
   std::cv_status
   wait_throw_on_error(const std::chrono::milliseconds& timeout)
   {
+//    std::cout << __func__ << " " << __LINE__ << " wwwwwwwwwwwwww" << std::endl; 
     if (m_state != state::running)
       return std::cv_status::no_timeout;
 
     // Wait throws on error. On timeout just return
+//    std::cout << __func__ << " " << __LINE__ << " wwwwwwwwwwwwww" << std::endl; 
     if (wait(timeout) == std::cv_status::timeout)
       return std::cv_status::timeout;
 
     // On succesful wait, the runlist becomes idle
+//    std::cout << __func__ << " " << __LINE__ << " wwwwwwwwwwwwww" << std::endl; 
     m_state = state::idle;
     return std::cv_status::no_timeout;
   }
@@ -3730,6 +3733,7 @@ std::cv_status
 run::
 wait2(const std::chrono::milliseconds& timeout_ms) const
 {
+//  std::cout << __func__ << " " << __LINE__ << " wwwwwwwwwwwwww timeout_ms" << std::endl; 
   XRT_TRACE_POINT_SCOPE(xrt_run_wait2);
   return xdp::native::profiling_wrapper("xrt::run::wait",
     [this, &timeout_ms] {

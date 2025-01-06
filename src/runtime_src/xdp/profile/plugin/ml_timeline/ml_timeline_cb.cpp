@@ -18,6 +18,7 @@
 
 #include "xdp/profile/plugin/ml_timeline/ml_timeline_cb.h"
 #include "xdp/profile/plugin/ml_timeline/ml_timeline_plugin.h"
+#include "core/common/debug.h"
 
 namespace xdp {
 
@@ -49,5 +50,6 @@ extern "C"
 void finishflushDeviceMLTmln(void* hwCtxImpl)
 {
   xdp::finishflushDeviceMLTmln(hwCtxImpl);
+  MTF_DEBUGF("aaamtf");
 }
 

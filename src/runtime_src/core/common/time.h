@@ -31,6 +31,10 @@ XRT_CORE_COMMON_EXPORT
 unsigned long
 time_ns();
 
+XRT_CORE_COMMON_EXPORT
+unsigned long long
+time_ns_mtf();
+
 /**
  * @return formatted timestamp
  */

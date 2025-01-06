@@ -56,9 +56,11 @@ completed(xrt_core::command* cmd)
 }
 
 inline void
-notify_host(xrt_core::command* cmd, ert_cmd_state state)
+notify_host(xrt_core::command* cmd, ert_cmd_state state)//mtf here
 {
+//  MTF_DEBUGF("cccbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n");
   XRT_DEBUGF("xrt_core::kds::command(%d), [running->done]\n", cmd->get_uid());
+  MTF_DEBUGF("2xrt_core::kds::command(%d), [running->done]\n", cmd->get_uid());
   auto retain = cmd->shared_from_this();
 
   // If retain is last reference to cmd, then the command object is
@@ -72,6 +74,7 @@ notify_host(xrt_core::command* cmd, ert_cmd_state state)
 inline void
 notify_host(xrt_core::command* cmd)
 {
+//  MTF_DEBUGF("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n");
   notify_host(cmd, get_command_state(cmd));
 }
 
@@ -455,6 +458,7 @@ public:
     // notify_host is not strictly necessary for unmanaged
     // command execution but provides a central place to update
     // and mark commands as done so they can be re-executed.
+//    MTF_DEBUGF("aaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb cmd pkt state:%d, opcode:%d\n", pkt->state, pkt->opcode);
     notify_host(const_cast<xrt_core::command*>(cmd), static_cast<ert_cmd_state>(pkt->state)); // NOLINT
 
     return std::cv_status::no_timeout;
@@ -656,6 +660,7 @@ public:
     // notify_host is not strictly necessary for unmanaged
     // command execution but provides a central place to update
     // and mark commands as done so they can be re-executed.
+    //MTF_DEBUGF("1111bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n");
     notify_host(const_cast<xrt_core::command*>(cmd), static_cast<ert_cmd_state>(pkt->state)); // NOLINT
 
     return std::cv_status::no_timeout;

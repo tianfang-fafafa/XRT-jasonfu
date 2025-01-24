@@ -211,31 +211,9 @@ namespace xdp {
 
   void MLTimelineClientDevImpl::finishflushDevice(void* /*hwCtxImpl*/)
   {
+    //not set level to warning for vart_perf when xrt.ini enables ml_timeline plugin.
     xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", 
               "Using Allocated buffer In MLTimelineClientDevImpl::finishflushDevice");
-#if 0    
-    if (xrt_core::config::get_verbosity() >= static_cast<uint32_t>(xrt_core::message::severity_level::debug)) {
-      /*
-       * To make sure the debug buffer host_offset is zero, create_debug_bo()
-       * must be called before trying to read timestamp. And create_debug_bo()
-       * should not call before previous has been freed, otherwise the creation
-       * would be ignored and the host_offset would not be zero.
-       */
-      auto mtfResultBOHolder = new ResultBOContainer(mHwContext, mBufSz);
-      memset(mtfResultBOHolder->map(), 0, mBufSz);
-
-      std::string msec_before = xdp::getMsecSinceEpoch();
-      uint64_t ts = readTimestamp();
-      std::string msec_after = xdp::getMsecSinceEpoch();
-      std::stringstream ssmsg;
-      ssmsg << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before
-          << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
-          << ", MsecSinceEpoch: " << msec_after << std::endl;
-      xrt_core::message::send(xrt_core::message::severity_level::debug, "XRT", ssmsg.str());
-      delete mtfResultBOHolder;
-      mtfResultBOHolder = nullptr;
-    }
-#endif
     mResultBOHolder->syncFromDevice();    
     uint32_t* ptr = mResultBOHolder->map();
       
@@ -339,7 +317,7 @@ namespace xdp {
       ssmsg << __func__ << " ========== " << __LINE__ << " MsecSinceEpoch: " << msec_before
           << ", Timestamp: " << ts << "(0x" << std::hex << ts << ")"
           << ", MsecSinceEpoch: " << msec_after << std::endl;
-      xrt_core::message::send(xrt_core::message::severity_level::info, "XRT", ssmsg.str());
+      xrt_core::message::send(xrt_core::message::severity_level::info, "XRT", ssmsg.str());/////////
       delete mResultBOHolder;
       mResultBOHolder = nullptr;
 
